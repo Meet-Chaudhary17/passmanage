@@ -1,0 +1,185 @@
+/* Scoped styles for PassManage in-page elements */
+.passmanage-field-badge {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  opacity: 0.75;
+}
+
+.passmanage-field-badge:hover {
+  transform: translateY(-50%) scale(1.15) !important;
+  opacity: 1;
+}
+
+.passmanage-dropdown {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  color: #f1f5f9 !important;
+  overflow: hidden !important;
+  padding: 4px !important;
+}
+
+.passmanage-dropdown-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 8px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: #94a3b8 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  border-bottom: 1px solid #1e293b !important;
+  margin-bottom: 4px !important;
+}
+
+.passmanage-dropdown-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.passmanage-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: background 0.1s ease !important;
+}
+
+.passmanage-item:hover {
+  background: #1e293b !important;
+}
+
+.passmanage-item-title {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #f8fafc !important;
+}
+
+.passmanage-item-badge {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  padding: 2px 6px !important;
+  border-radius: 9999px !important;
+  border: 1px solid transparent !important;
+}
+
+.passmanage-toast {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  padding: 10px 16px !important;
+  border-radius: 10px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  z-index: 2147483647 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  animation: passmanageSlideIn 0.2s ease-out !important;
+}
+
+.passmanage-toast-info {
+  background: #0f172a !important;
+  color: #38bdf8 !important;
+  border: 1px solid #0284c7 !important;
+}
+
+.passmanage-toast-success {
+  background: #064e3b !important;
+  color: #34d399 !important;
+  border: 1px solid #059669 !important;
+}
+
+.passmanage-toast-warning {
+  background: #78350f !important;
+  color: #fde047 !important;
+  border: 1px solid #d97706 !important;
+}
+
+.passmanage-toast-error {
+  background: #450a0a !important;
+  color: #fca5a5 !important;
+  border: 1px solid #dc2626 !important;
+}
+
+@keyframes passmanageSlideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Floating Top Banner */
+.passmanage-top-banner {
+  position: fixed !important;
+  top: 14px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: #0f172a !important;
+  border: 1px solid #38bdf880 !important;
+  border-radius: 9999px !important;
+  padding: 8px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.2) !important;
+  z-index: 2147483646 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  animation: passmanageSlideDown 0.3s ease-out !important;
+}
+
+@keyframes passmanageSlideDown {
+  from {
+    transform: translate(-50%, -20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.passmanage-banner-text {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #f1f5f9 !important;
+}
+
+.passmanage-banner-btn {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  padding: 4px 12px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background 0.15s ease !important;
+}
+
+.passmanage-banner-btn:hover {
+  background: #0369a1 !important;
+}
+
+.passmanage-banner-close {
+  color: #94a3b8 !important;
+  background: transparent !important;
+  border: none !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  line-height: 1 !important;
+  padding: 0 2px !important;
+}
+
+.passmanage-banner-close:hover {
+  color: #f1f5f9 !important;
+}

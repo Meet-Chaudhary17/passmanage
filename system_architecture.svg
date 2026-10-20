@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 840" width="100%" height="100%" style="background:#ffffff; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <style>
+      .title { font-size: 20px; font-weight: bold; fill: #0f172a; }
+      .subtitle { font-size: 11px; fill: #64748b; }
+      .section-hdr { font-size: 13px; font-weight: bold; }
+      .box-hdr { font-size: 12px; font-weight: bold; }
+      .sub-hdr { font-size: 10px; font-family: 'SFMono-Regular', Consolas, monospace; fill: #64748b; }
+      .item-bold { font-size: 10px; font-weight: 600; fill: #0f172a; }
+      .item-desc { font-size: 10px; fill: #475569; }
+      .lbl { font-size: 9.5px; font-weight: 600; fill: #0f172a; }
+      .arrow { stroke-width: 1.8; fill: none; }
+    </style>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0284c7"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#ef4444"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#22c55e"/>
+    </marker>
+  </defs>
+
+  <!-- Title Header -->
+  <text x="40" y="32" class="title">PassManage: High-Assurance Zero-Knowledge System Architecture</text>
+  <text x="40" y="48" class="subtitle">Progressive-Trust Multi-Modal Authorization Pipeline (ArcFace Biometrics + FIDO2 WebAuthn + AES-256-GCM)</text>
+
+  <!-- ==================== TIER 1: CLIENT TIER ==================== -->
+  <rect x="40" y="65" width="1120" height="155" rx="10" fill="#f8fafc" stroke="#bae6fd" stroke-width="1.5" />
+  <text x="55" y="85" class="section-hdr" fill="#0369a1">CLIENT TRUST DOMAIN (Chromium Host Environment)</text>
+
+  <!-- Box 1A: React Web App -->
+  <rect x="55" y="98" width="530" height="110" rx="8" fill="#ffffff" stroke="#38bdf8" stroke-width="1.2" />
+  <text x="70" y="116" class="box-hdr" fill="#0e7490">React.js + Tailwind CSS Web Application</text>
+  <text x="70" y="129" class="sub-hdr">Vite Dev Server (:5173) | Responsive Dark Enterprise UI</text>
+  <text x="70" y="148" class="item-bold">• Onboarding &amp; Enrollment:</text>
+  <text x="215" y="148" class="item-desc">WebRTC video capture &amp; FIDO2 passkey ceremony</text>
+  <text x="70" y="165" class="item-bold">• Empty-Vault Baseline:</text>
+  <text x="215" y="165" class="item-desc">Strict zero-dummy data; authentic credentials only</text>
+  <text x="70" y="182" class="item-bold">• Categorized Vault CRUD:</text>
+  <text x="215" y="182" class="item-desc">Shareable, Restricted, and High-Sensitivity gating</text>
+  <text x="70" y="199" class="item-bold">• Verification Bridge (/verify):</text>
+  <text x="215" y="199" class="item-desc">Dedicated secure tab for biometric/passkey step-up</text>
+
+  <!-- Box 1B: Chrome Extension MV3 -->
+  <rect x="615" y="98" width="530" height="110" rx="8" fill="#ffffff" stroke="#0ea5e9" stroke-width="1.2" />
+  <text x="630" y="116" class="box-hdr" fill="#0284c7">Chrome Extension (Manifest V3 Companion)</text>
+  <text x="630" y="129" class="sub-hdr">Service Worker Architecture | Decoupled Zero-Knowledge Transport</text>
+  <text x="630" y="148" class="item-bold">• In-Page Dropdown:</text>
+  <text x="760" y="148" class="item-desc">Floating account selector anchored to input focus</text>
+  <text x="630" y="165" class="item-bold">• Top Floating Banner:</text>
+  <text x="760" y="165" class="item-desc">Automatic domain notification pill with 1-click autofill</text>
+  <text x="630" y="182" class="item-bold">• Service Worker Coordinator:</text>
+  <text x="760" y="182" class="item-desc">Tab tracking, challenge pairing, and post-auth injection</text>
+  <text x="630" y="199" class="item-bold">• Native Prototype Setter:</text>
+  <text x="760" y="199" class="item-desc">Bypasses React/Vue synthetic state traps during autofill</text>
+
+  <!-- Arrows 1 -> 2 -->
+  <path d="M 320 220 L 320 268" class="arrow" stroke="#0284c7" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+  <rect x="180" y="235" width="280" height="16" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="188" y="247" class="lbl">HTTPS REST: Vault Management &amp; Bridge Sessions</text>
+
+  <path d="M 880 220 L 880 268" class="arrow" stroke="#0284c7" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+  <rect x="735" y="235" width="290" height="16" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="743" y="247" class="lbl">HTTPS REST: Metadata-Only Matching &amp; Release</text>
+
+  <!-- ==================== TIER 2: BACKEND API GATEWAY ==================== -->
+  <rect x="40" y="270" width="1120" height="250" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" />
+  <text x="55" y="290" class="section-hdr" fill="#1e293b">BACKEND API GATEWAY &amp; CRYPTOGRAPHIC ENGINE (Node.js &amp; Express - Port 5000)</text>
+
+  <!-- Policy Engine Top Bar -->
+  <rect x="55" y="302" width="1090" height="54" rx="6" fill="#f1f5f9" stroke="#64748b" stroke-width="1.2" />
+  <text x="70" y="318" class="box-hdr" fill="#0f172a">Centralized Authorization Policy Engine (Non-Bypassable Trust Boundary)</text>
+  <text x="70" y="333" class="item-desc">Enforces access rules server-side: Client categories untrusted. Single-use 30s tokens issued only on policy completion.</text>
+  <text x="70" y="347" class="item-bold" fill="#1e3a8a">• Tier 1 (Shareable): Session | • Tier 2 (Restricted): ArcFace Biometrics | • Tier 3 (High Sensitivity): ArcFace + FIDO2 Passkey</text>
+
+  <!-- 3 Sub-Service Cards -->
+  <!-- Sub 1: CryptoService -->
+  <rect x="55" y="365" width="345" height="142" rx="6" fill="#ffffff" stroke="#818cf8" stroke-width="1.2" />
+  <text x="70" y="383" class="box-hdr" fill="#4338ca">CryptoService (Vault Security)</text>
+  <text x="70" y="401" class="item-bold">Single-Payload AES-256-GCM:</text>
+  <text x="70" y="413" class="sub-hdr">{user, pass, notes} sealed with 1 fresh 96-bit IV</text>
+  <text x="70" y="430" class="item-bold">HKDF-SHA256 Derivation:</text>
+  <text x="70" y="442" class="sub-hdr">Per-user User Vault Key (UVK) isolation</text>
+  <text x="70" y="459" class="item-bold">Argon2id Master Hashing:</text>
+  <text x="70" y="471" class="sub-hdr">m=64 MiB, t=3, p=4; GPU/ASIC resistant</text>
+  <text x="70" y="488" class="item-bold">Biometric Vector Encryption:</text>
+  <text x="70" y="500" class="sub-hdr">512-d ArcFace float vectors encrypted at rest</text>
+
+  <!-- Sub 2: WebAuthn Service -->
+  <rect x="427" y="365" width="345" height="142" rx="6" fill="#ffffff" stroke="#c084fc" stroke-width="1.2" />
+  <text x="442" y="383" class="box-hdr" fill="#7e22ce">WebAuthn / FIDO2 Service</text>
+  <text x="442" y="401" class="item-bold">@simplewebauthn Library:</text>
+  <text x="442" y="413" class="sub-hdr">FIDO2 Level 3 compliant server engine</text>
+  <text x="442" y="430" class="item-bold">Hardware-Bound Attestation:</text>
+  <text x="442" y="442" class="sub-hdr">Windows Hello, Touch ID &amp; YubiKey (TPM)</text>
+  <text x="442" y="459" class="item-bold">Replay-Protected Counter:</text>
+  <text x="442" y="471" class="sub-hdr">Monotonic signature counter verification</text>
+  <text x="442" y="488" class="item-bold">Cryptographic Origin Binding:</text>
+  <text x="442" y="500" class="sub-hdr">Neutralizes AiTM phishing proxies &amp; relays</text>
+
+  <!-- Sub 3: UrlService -->
+  <rect x="800" y="365" width="345" height="142" rx="6" fill="#ffffff" stroke="#38bdf8" stroke-width="1.2" />
+  <text x="815" y="383" class="box-hdr" fill="#0369a1">UrlService &amp; Audit Engine</text>
+  <text x="815" y="401" class="item-bold">Strict Hostname Matching:</text>
+  <text x="815" y="413" class="sub-hdr">Matches login subpaths; blocks cross-domain leaks</text>
+  <text x="815" y="430" class="item-bold">Downgrade Prevention:</text>
+  <text x="815" y="442" class="sub-hdr">Blocks releasing HTTPS creds over cleartext HTTP</text>
+  <text x="815" y="459" class="item-bold">Single-Use Authorization:</text>
+  <text x="815" y="471" class="sub-hdr">30-sec TTL tokens; destroyed immediately on use</text>
+  <text x="815" y="488" class="item-bold">Append-Only Security Audit:</text>
+  <text x="815" y="500" class="sub-hdr">Real client IP, user-agent &amp; tamper logging</text>
+
+  <!-- Arrows 2 -> 3 -->
+  <path d="M 310 520 L 310 568" class="arrow" stroke="#ef4444" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>
+  <rect x="145" y="535" width="330" height="16" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="153" y="547" class="lbl">Internal TCP / RAM Buffer: Embedding &amp; Cosine Distance</text>
+
+  <path d="M 890 520 L 890 568" class="arrow" stroke="#22c55e" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>
+  <rect x="740" y="535" width="300" height="16" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="748" y="547" class="lbl">PostgreSQL Pool Client: Encrypted Rows &amp; 30s Tokens</text>
+
+  <!-- ==================== TIER 3: LOWER ENGINES ==================== -->
+  <!-- Box 3A: Python Biometric Engine (Left) -->
+  <rect x="40" y="570" width="545" height="245" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" />
+  <text x="55" y="590" class="section-hdr" fill="#b91c1c">ISOLATED BIOMETRIC MICROSERVICE (Python FastAPI - Port 8000)</text>
+  <text x="55" y="605" class="sub-hdr">Localhost Trust Boundary (X-Internal-Service-Key) | Single-Face Enforcement</text>
+
+  <rect x="55" y="618" width="515" height="42" rx="5" fill="#ffffff" stroke="#fca5a5" stroke-width="1" />
+  <text x="65" y="633" class="item-bold" fill="#991b1b">RAM-Only In-Memory Decoding (Zero Disk Writes)</text>
+  <text x="65" y="648" class="item-desc">Base64 frames decoded via cv2.imdecode buffer; no image files ever saved to disk</text>
+
+  <rect x="55" y="666" width="515" height="42" rx="5" fill="#ffffff" stroke="#fca5a5" stroke-width="1" />
+  <text x="65" y="681" class="item-bold" fill="#991b1b">OpenCV 4.11 Cascade Classifier &amp; Eye Alignment</text>
+  <text x="65" y="696" class="item-desc">haarcascade_frontalface_default.xml + eye leveling (rotational affine transform)</text>
+
+  <rect x="55" y="714" width="515" height="42" rx="5" fill="#ffffff" stroke="#fca5a5" stroke-width="1" />
+  <text x="65" y="729" class="item-bold" fill="#991b1b">DeepFace ArcFace Deep CNN Backbone (512-d)</text>
+  <text x="65" y="744" class="item-desc">L2-normalized 512-dimensional embedding projection with additive angular margin</text>
+
+  <rect x="55" y="762" width="515" height="42" rx="5" fill="#ffffff" stroke="#fca5a5" stroke-width="1" />
+  <text x="65" y="777" class="item-bold" fill="#991b1b">Cosine Similarity Verification Engine</text>
+  <text x="65" y="792" class="item-desc">Calculates D_cos &lt;= 0.68 prototype decision threshold; rejects multi-face frames</text>
+
+  <!-- Box 3B: PostgreSQL Database (Right) -->
+  <rect x="615" y="570" width="545" height="245" rx="10" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5" />
+  <text x="630" y="590" class="section-hdr" fill="#15803d">DATABASE PERSISTENCE TIER (PostgreSQL 18 - Port 5432 / WSL)</text>
+  <text x="630" y="605" class="sub-hdr">Relational Integrity | Idempotent Migrations | Zero Pre-Seeded Dummy Records</text>
+
+  <rect x="630" y="618" width="515" height="28" rx="4" fill="#ffffff" stroke="#bbf7d0" stroke-width="1" />
+  <text x="640" y="636" class="item-bold" fill="#166534">users</text>
+  <text x="735" y="636" class="sub-hdr">id (UUID), email (UNIQUE), password_hash (Argon2id)</text>
+
+  <rect x="630" y="650" width="515" height="28" rx="4" fill="#ffffff" stroke="#bbf7d0" stroke-width="1" />
+  <text x="640" y="668" class="item-bold" fill="#166534">credentials</text>
+  <text x="735" y="668" class="sub-hdr">id, user_id, website_name, target_hostname, category, payload, iv, tag</text>
+
+  <rect x="630" y="682" width="515" height="28" rx="4" fill="#ffffff" stroke="#bbf7d0" stroke-width="1" />
+  <text x="640" y="700" class="item-bold" fill="#166534">face_templates</text>
+  <text x="735" y="700" class="sub-hdr">id, user_id (UNIQUE), model ('ArcFace'), encrypted_embedding, iv, tag</text>
+
+  <rect x="630" y="714" width="515" height="28" rx="4" fill="#ffffff" stroke="#bbf7d0" stroke-width="1" />
+  <text x="640" y="732" class="item-bold" fill="#166534">webauthn_credentials</text>
+  <text x="785" y="732" class="sub-hdr">id, user_id, credential_id (UNIQUE), public_key (COSE), counter</text>
+
+  <rect x="630" y="746" width="515" height="28" rx="4" fill="#ffffff" stroke="#bbf7d0" stroke-width="1" />
+  <text x="640" y="764" class="item-bold" fill="#166534">release_authorizations</text>
+  <text x="785" y="764" class="sub-hdr">id, user_id, credential_id, release_token_hash, expires_at (30s), is_used</text>
+
+  <rect x="630" y="778" width="515" height="28" rx="4" fill="#ffffff" stroke="#bbf7d0" stroke-width="1" />
+  <text x="640" y="796" class="item-bold" fill="#166534">security_events</text>
+  <text x="735" y="796" class="sub-hdr">Append-only audit trail: timestamp, user_id, event_type, ip_address</text>
+</svg>

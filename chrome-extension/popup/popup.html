@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PassManage Companion</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="popup-header">
+      <div class="brand">
+        <svg class="brand-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span class="brand-title">PassManage</span>
+      </div>
+      <div id="status-badge" class="status-badge disconnected">
+        <span class="dot"></span>
+        <span id="status-text">Disconnected</span>
+      </div>
+    </div>
+
+    <!-- Error Toast inside popup -->
+    <div id="popup-error" class="popup-alert hidden"></div>
+
+    <!-- VIEW 1: UNPAIRED -->
+    <div id="unpaired-view" class="view">
+      <div class="unpaired-intro">
+        <h4>Connect to Local Vault</h4>
+        <p>Open your PassManage dashboard on localhost, click "Add Extension" or "Browser Extension" to generate an 8-character pairing code.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="pair-code-input">Pairing Challenge Code</label>
+        <input type="text" id="pair-code-input" placeholder="PM-XXXX-XX" autocomplete="off" />
+      </div>
+
+      <button id="pair-btn" class="primary-btn">Link Extension</button>
+      <div class="hint">Ensure Express backend is running on localhost:5000</div>
+    </div>
+
+    <!-- VIEW 2: PAIRED -->
+    <div id="paired-view" class="view hidden">
+      <div class="user-meta">
+        <span class="meta-label">Vault Account</span>
+        <span id="user-email" class="meta-value">user@example.com</span>
+      </div>
+
+      <!-- Current Website Detection -->
+      <div class="site-card">
+        <div class="site-header">
+          <span class="site-label">Active Tab</span>
+          <span id="current-hostname" class="site-domain">github.com</span>
+        </div>
+        <div id="matches-status" class="matches-count">Scanning matching credentials...</div>
+      </div>
+
+      <!-- Matching list -->
+      <div id="matches-list" class="matches-container"></div>
+
+      <!-- Footer action -->
+      <div class="footer-actions">
+        <button id="unpair-btn" class="text-btn">Unlink Extension</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
