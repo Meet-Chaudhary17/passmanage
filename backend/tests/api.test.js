@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import app from '../src/app.js';
+import { pool } from '../src/config/database.js';
 
 let server;
 let baseUrl;
@@ -19,6 +20,7 @@ test.after(async () => {
   if (server) {
     await new Promise((resolve) => server.close(resolve));
   }
+  await pool.end();
 });
 
 test('API - Health Check returns ONLINE and database CONNECTED', async () => {

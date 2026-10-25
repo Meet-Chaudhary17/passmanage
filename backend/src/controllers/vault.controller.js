@@ -7,6 +7,7 @@ import { AuthorizationService } from '../services/authorization.service.js';
 import { FaceService } from '../services/face.service.js';
 import { WebAuthnService } from '../services/webauthn.service.js';
 import { AuditService } from '../services/audit.service.js';
+import { EmailService } from '../services/email.service.js';
 
 export const createCredentialSchema = z.object({
   body: z.object({
@@ -197,15 +198,15 @@ export class VaultController {
       const { id } = req.params;
       const { imageBase64 } = req.validated.body;
 
-      // 1. Verify credential exists for user and load category
-      const credRes = await db.query('SELECT id, category FROM credentials WHERE id = $1 AND user_id = $2', [
-        id,
-        req.user.id,
-      ]);
+      // 1. Verify credential exists for user and load category & site metadata
+      const credRes = await db.query(
+        'SELECT id, category, website_name, target_hostname FROM credentials WHERE id = $1 AND user_id = $2',
+        [id, req.user.id]
+      );
       if (credRes.rowCount === 0) {
         return res.status(404).json({ error: 'Credential not found.' });
       }
-      const { category } = credRes.rows[0];
+      const { category, website_name, target_hostname } = credRes.rows[0];
 
       // 2. Fetch enrolled biometric template
       const templateRes = await db.query(
@@ -228,12 +229,49 @@ export class VaultController {
       const verifyResult = await FaceService.verifyFace(imageBase64, enrolledEmbedding);
 
       if (!verifyResult.verified) {
+        // Log failure in security audit log
         await AuditService.logEvent({
           userId: req.user.id,
           eventType: 'FACE_VERIFY_FAILURE',
           req,
           details: { credentialId: id, distance: verifyResult.distance, threshold: verifyResult.threshold },
         });
+
+        // Log suspicious access denied
+        await AuditService.logEvent({
+          userId: req.user.id,
+          eventType: 'SUSPICIOUS_ACCESS_DENIED',
+          req,
+          details: {
+            reason: 'INTRUDER_FACE_MISMATCH',
+            credentialId: id,
+            websiteName: website_name,
+            targetHostname: target_hostname,
+            distance: verifyResult.distance,
+          },
+        });
+
+        // Silently notify the registered account owner with intruder photograph
+        try {
+          const userRes = await db.query('SELECT email FROM users WHERE id = $1', [req.user.id]);
+          const userEmail = userRes.rows[0]?.email;
+          if (userEmail) {
+            EmailService.sendIntruderAlert({
+              to: userEmail,
+              websiteName: website_name || 'Vault Credential',
+              targetHostname: target_hostname || 'localhost',
+              ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1',
+              userAgent: req.headers['user-agent'] || 'Browser Client',
+              timestamp: new Date(),
+              intruderImageBase64: verifyResult.intruder_face_crop || imageBase64,
+            }).catch((emailErr) => {
+              console.error('[SECURITY ALERT] Failed to send intruder email:', emailErr);
+            });
+          }
+        } catch (alertErr) {
+          console.error('[SECURITY ALERT] Error preparing intruder alert dispatch:', alertErr);
+        }
+
         return res.status(403).json({
           authorized: false,
           error: 'Face verification failed. Please try again.',

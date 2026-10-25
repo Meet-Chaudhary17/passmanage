@@ -43,6 +43,17 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
+-- 1b. Pending Registrations (Email OTP Verification)
+CREATE TABLE IF NOT EXISTS pending_registrations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    otp_code VARCHAR(10) NOT NULL,
+    otp_expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    attempts INT DEFAULT 0 NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
 -- 2. Biometric Face Templates
 CREATE TABLE IF NOT EXISTS face_templates (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import app from '../src/app.js';
-import { db } from '../src/config/database.js';
+import { db, pool } from '../src/config/database.js';
 
 let server;
 let baseUrl;
@@ -20,14 +20,15 @@ test.after(async () => {
   if (server) {
     await new Promise((resolve) => server.close(resolve));
   }
+  await pool.end();
 });
 
 test('End-to-End Progressive Auth & Zero Dummy Data Verification', async () => {
   const testEmail = `integration_test_${Date.now()}@example.com`;
   const testPassword = 'CorrectHorseBattery#2026';
 
-  // 1. Register a brand new account
-  const regRes = await fetch(`${baseUrl}/api/auth/register`, {
+  // 1. Initiate registration with Email OTP
+  const regReq = await fetch(`${baseUrl}/api/auth/register-request`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -37,7 +38,29 @@ test('End-to-End Progressive Auth & Zero Dummy Data Verification', async () => {
     }),
   });
 
-  assert.equal(regRes.status, 201, 'Registration should succeed');
+  assert.equal(regReq.status, 200, 'OTP request should succeed');
+  const reqData = await regReq.json();
+  assert.equal(reqData.success, true);
+
+  // Retrieve generated OTP from pending_registrations
+  const pendingRes = await db.query(
+    'SELECT otp_code FROM pending_registrations WHERE LOWER(email) = LOWER($1)',
+    [testEmail]
+  );
+  assert.equal(pendingRes.rowCount, 1, 'Pending registration should exist in DB');
+  const otpCode = pendingRes.rows[0].otp_code;
+
+  // Verify OTP and complete registration
+  const regRes = await fetch(`${baseUrl}/api/auth/register-verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: testEmail,
+      otp: otpCode,
+    }),
+  });
+
+  assert.equal(regRes.status, 201, 'Registration verification should succeed');
   const regData = await regRes.json();
   const token = regData.token;
   const userId = regData.user.id;

@@ -1,9 +1,11 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { db } from '../config/database.js';
 import { config } from '../config/env.js';
 import { CryptoService } from '../services/crypto.service.js';
 import { AuditService } from '../services/audit.service.js';
+import { EmailService } from '../services/email.service.js';
 
 export const registerSchema = z.object({
   body: z.object({
@@ -22,6 +24,19 @@ export const registerSchema = z.object({
   }),
 });
 
+export const verifyOtpSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+    otp: z.string().min(4, 'Verification code is required').max(10),
+  }),
+});
+
+export const resendOtpSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+  }),
+});
+
 export const loginSchema = z.object({
   body: z.object({
     email: z.string().email(),
@@ -30,7 +45,10 @@ export const loginSchema = z.object({
 });
 
 export class AuthController {
-  static async register(req, res, next) {
+  /**
+   * Step 1: Initiate Registration & Dispatch Email OTP
+   */
+  static async requestOtp(req, res, next) {
     try {
       const { email, password } = req.validated.body;
 
@@ -43,24 +61,109 @@ export class AuthController {
       // 2. Hash password with Argon2id
       const passwordHash = await CryptoService.hashPassword(password);
 
-      // 3. Create clean user record with ZERO dummy data
+      // 3. Generate secure 6-digit numeric OTP
+      const otp = crypto.randomInt(100000, 1000000).toString();
+
+      // 4. Save/update pending registration (10-minute expiry)
+      const upsertQuery = `
+        INSERT INTO pending_registrations (email, password_hash, otp_code, otp_expires_at, attempts, created_at)
+        VALUES (LOWER($1), $2, $3, NOW() + INTERVAL '10 minutes', 0, NOW())
+        ON CONFLICT (email)
+        DO UPDATE SET
+          password_hash = EXCLUDED.password_hash,
+          otp_code = EXCLUDED.otp_code,
+          otp_expires_at = EXCLUDED.otp_expires_at,
+          attempts = 0,
+          created_at = NOW();
+      `;
+      await db.query(upsertQuery, [email, passwordHash, otp]);
+
+      // 5. Send OTP to user's email via Gmail SMTP
+      await EmailService.sendRegistrationOtp(email, otp);
+
+      res.status(200).json({
+        success: true,
+        message: 'A 6-digit verification code has been sent to your email. Please verify to complete vault creation.',
+        email,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Alias for backward compatibility: /register initiates OTP flow
+   */
+  static async register(req, res, next) {
+    return AuthController.requestOtp(req, res, next);
+  }
+
+  /**
+   * Step 2: Verify Registration OTP & Create User
+   */
+  static async verifyOtp(req, res, next) {
+    try {
+      const { email, otp } = req.validated.body;
+
+      const pendingRes = await db.query(
+        'SELECT id, email, password_hash, otp_code, otp_expires_at, attempts FROM pending_registrations WHERE LOWER(email) = LOWER($1)',
+        [email]
+      );
+
+      if (pendingRes.rowCount === 0) {
+        return res.status(400).json({ error: 'No pending registration found for this email. Please sign up again.' });
+      }
+
+      const pending = pendingRes.rows[0];
+
+      // Check expiry
+      if (new Date() > new Date(pending.otp_expires_at)) {
+        await db.query('DELETE FROM pending_registrations WHERE id = $1', [pending.id]);
+        return res.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
+      }
+
+      // Check brute force attempts
+      if (pending.attempts >= 5) {
+        return res.status(429).json({ error: 'Too many incorrect attempts. Please request a new verification code.' });
+      }
+
+      // Check OTP match
+      if (pending.otp_code.trim() !== otp.trim()) {
+        await db.query('UPDATE pending_registrations SET attempts = attempts + 1 WHERE id = $1', [pending.id]);
+        const remaining = 4 - pending.attempts;
+        return res.status(400).json({
+          error: `Invalid verification code. ${remaining > 0 ? remaining + ' attempt(s) remaining.' : 'Code locked. Please request a new code.'}`,
+        });
+      }
+
+      // Ensure email wasn't taken
+      const duplicateCheck = await db.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      if (duplicateCheck.rowCount > 0) {
+        await db.query('DELETE FROM pending_registrations WHERE id = $1', [pending.id]);
+        return res.status(409).json({ error: 'An account with this email address already exists.' });
+      }
+
+      // Insert clean user record into users
       const insertQuery = `
         INSERT INTO users (email, password_hash, security_setup_completed)
         VALUES (LOWER($1), $2, FALSE)
         RETURNING id, email, security_setup_completed, created_at
       `;
-      const result = await db.query(insertQuery, [email, passwordHash]);
+      const result = await db.query(insertQuery, [email, pending.password_hash]);
       const user = result.rows[0];
 
-      // 4. Log real security event
+      // Clean up pending registration
+      await db.query('DELETE FROM pending_registrations WHERE id = $1', [pending.id]);
+
+      // Log real security audit event
       await AuditService.logEvent({
         userId: user.id,
         eventType: 'REGISTRATION_SUCCESS',
         req,
-        details: { email: user.email },
+        details: { email: user.email, verifiedVia: 'EMAIL_OTP' },
       });
 
-      // 5. Issue access token
+      // Issue access token
       const token = jwt.sign(
         { userId: user.id, email: user.email, type: 'user' },
         config.jwtSecret,
@@ -68,7 +171,7 @@ export class AuthController {
       );
 
       res.status(201).json({
-        message: 'Account registered successfully.',
+        message: 'Account registered and email verified successfully.',
         token,
         user: {
           id: user.id,
@@ -76,6 +179,39 @@ export class AuthController {
           securitySetupCompleted: user.security_setup_completed,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Resend Registration OTP
+   */
+  static async resendOtp(req, res, next) {
+    try {
+      const { email } = req.validated.body;
+
+      const pendingRes = await db.query(
+        'SELECT id FROM pending_registrations WHERE LOWER(email) = LOWER($1)',
+        [email]
+      );
+
+      if (pendingRes.rowCount === 0) {
+        return res.status(400).json({ error: 'No pending registration found for this email. Please register again.' });
+      }
+
+      const otp = crypto.randomInt(100000, 1000000).toString();
+
+      await db.query(
+        `UPDATE pending_registrations
+         SET otp_code = $1, otp_expires_at = NOW() + INTERVAL '10 minutes', attempts = 0
+         WHERE LOWER(email) = LOWER($2)`,
+        [otp, email]
+      );
+
+      await EmailService.sendRegistrationOtp(email, otp);
+
+      res.json({ success: true, message: 'A new 6-digit verification code has been sent to your email.' });
     } catch (error) {
       next(error);
     }

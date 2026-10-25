@@ -38,5 +38,12 @@ export const config = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   rpName: process.env.RP_NAME || 'PassManage Local Vault',
   rpId: process.env.RP_ID || 'localhost',
-  origin: process.env.ORIGIN || 'http://localhost:5173'
+  origin: process.env.ORIGIN || 'http://localhost:5173',
+
+  smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+  smtpPort: parseInt(process.env.SMTP_PORT || '465', 10),
+  smtpSecure: process.env.SMTP_SECURE !== 'false',
+  smtpUser: process.env.SMTP_USER || 'passmanagexyz@gmail.com',
+  smtpPass: process.env.SMTP_PASS || 'snngqcbsnpfubavo',
+  smtpFrom: process.env.SMTP_FROM || '"PassManage Security" <passmanagexyz@gmail.com>'
 };

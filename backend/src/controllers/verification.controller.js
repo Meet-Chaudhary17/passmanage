@@ -5,6 +5,7 @@ import { FaceService } from '../services/face.service.js';
 import { CryptoService } from '../services/crypto.service.js';
 import { WebAuthnService } from '../services/webauthn.service.js';
 import { AuditService } from '../services/audit.service.js';
+import { EmailService } from '../services/email.service.js';
 
 export const sessionFaceSchema = z.object({
   body: z.object({
@@ -78,12 +79,48 @@ export class VerificationController {
       const verifyResult = await FaceService.verifyFace(imageBase64, enrolledEmbedding);
 
       if (!verifyResult.verified) {
+        // Log verification failure
         await AuditService.logEvent({
           userId: req.user.id,
           eventType: 'FACE_VERIFY_FAILURE',
           req,
           details: { sessionId, distance: verifyResult.distance, threshold: verifyResult.threshold },
         });
+
+        // Log suspicious access denied
+        await AuditService.logEvent({
+          userId: req.user.id,
+          eventType: 'SUSPICIOUS_ACCESS_DENIED',
+          req,
+          details: {
+            reason: 'INTRUDER_FACE_MISMATCH',
+            sessionId,
+            targetHostname: session.target_hostname,
+            distance: verifyResult.distance,
+          },
+        });
+
+        // Silently notify the registered account owner with intruder photograph
+        try {
+          const userRes = await db.query('SELECT email FROM users WHERE id = $1', [req.user.id]);
+          const userEmail = userRes.rows[0]?.email;
+          if (userEmail) {
+            EmailService.sendIntruderAlert({
+              to: userEmail,
+              websiteName: session.website_name || 'Companion Autofill',
+              targetHostname: session.target_hostname || 'localhost',
+              ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1',
+              userAgent: req.headers['user-agent'] || 'Browser Client',
+              timestamp: new Date(),
+              intruderImageBase64: verifyResult.intruder_face_crop || imageBase64,
+            }).catch((emailErr) => {
+              console.error('[SECURITY ALERT] Failed to send intruder email:', emailErr);
+            });
+          }
+        } catch (alertErr) {
+          console.error('[SECURITY ALERT] Error preparing intruder alert dispatch:', alertErr);
+        }
+
         return res.status(403).json({
           error: 'Face verification failed. Please try again.',
           distance: verifyResult.distance,

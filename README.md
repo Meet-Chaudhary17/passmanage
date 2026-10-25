@@ -8,6 +8,8 @@ A complete, production-grade, locally runnable academic prototype password manag
 - **FIDO2 / WebAuthn** hardware passkeys (`@simplewebauthn` v14)
 - **Manifest V3 Chrome Extension** companion with login form detection and origin-isolated autofill
 - **AES-256-GCM** single-payload authenticated encryption with HKDF key derivation
+- **Email OTP Registration Verification**: Secure 2-step onboarding requiring 6-digit one-time passcode confirmation via Gmail SMTP before account activation.
+- **Intruder Detection & Photo Dispatch**: Silent facial snapshot and cropping on failed biometric recognition, instantly dispatched as an email alert with photographic evidence to the legitimate account owner.
 - **Progressive Authentication**: Shareable (Session) $\rightarrow$ Restricted (Biometric Face) $\rightarrow$ High Sensitivity (Face + Passkey)
 - **Strict Zero-Dummy-Data Guarantee**: All new accounts start completely empty with 0 credentials.
 

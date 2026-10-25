@@ -200,12 +200,45 @@ def verify_face(req: VerifyRequest, x_internal_service_key: Optional[str] = Head
 
     is_verified = bool(cosine_distance <= THRESHOLD)
 
+    intruder_face_crop = None
+    if not is_verified:
+        try:
+            fa = representations[0].get("facial_area", {})
+            fx = int(fa.get("x", 0))
+            fy = int(fa.get("y", 0))
+            fw = int(fa.get("w", 0))
+            fh = int(fa.get("h", 0))
+
+            img_h, img_w = img.shape[:2]
+            if fw > 0 and fh > 0:
+                # Add proportional padding so face/chin/hair are not cut off
+                pad_w = int(fw * 0.35)
+                pad_top = int(fh * 0.45)
+                pad_bottom = int(fh * 0.30)
+
+                x1 = max(0, fx - pad_w)
+                y1 = max(0, fy - pad_top)
+                x2 = min(img_w, fx + fw + pad_w)
+                y2 = min(img_h, fy + fh + pad_bottom)
+
+                cropped_face = img[y1:y2, x1:x2]
+                if cropped_face.size > 0:
+                    _, buf = cv2.imencode(".jpg", cropped_face, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
+                    intruder_face_crop = "data:image/jpeg;base64," + base64.b64encode(buf).decode("utf-8")
+        except Exception as crop_err:
+            print(f"[WARN] Failed to crop intruder face: {crop_err}")
+
+        # Fallback to full frame if crop couldn't be formed
+        if not intruder_face_crop:
+            intruder_face_crop = req.image_base64
+
     return {
         "success": True,
         "verified": is_verified,
         "distance": round(cosine_distance, 4),
         "threshold": THRESHOLD,
-        "metric": DISTANCE_METRIC
+        "metric": DISTANCE_METRIC,
+        "intruder_face_crop": intruder_face_crop
     }
 
 if __name__ == "__main__":
