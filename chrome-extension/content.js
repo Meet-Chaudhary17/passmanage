@@ -12,15 +12,22 @@
   let activeDropdown = null;
   let topBannerEl = null;
 
-  // 1. Native value setter ensuring React / Vue / Angular state updates
+  // 1. Native value setter ensuring React / Vue / Angular / Google state updates
   function setNativeValue(element, value) {
-    if (!element) return;
+    if (!element || value === undefined || value === null) return;
     try {
-      const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set;
+      element.focus();
+
+      // Reset React's internal value tracker if present
+      const tracker = element._valueTracker;
+      if (tracker) {
+        tracker.setValue('');
+      }
+
       const prototype = Object.getPrototypeOf(element);
       const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+      const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set;
 
-      element.focus();
       if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {
         prototypeValueSetter.call(element, value);
       } else if (valueSetter) {
@@ -29,13 +36,32 @@
         element.value = value;
       }
 
-      element.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
-      element.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
-      element.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
-      element.dispatchEvent(new KeyboardEvent('keyup', { key: 'a', bubbles: true }));
-      element.blur();
-    } catch (err) {
+      // Also set the value property and attribute
       element.value = value;
+      element.setAttribute('value', value);
+
+      // Dispatch comprehensive event sequence
+      element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true, composed: true }));
+      element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true, composed: true }));
+
+      try {
+        element.dispatchEvent(
+          new InputEvent('input', {
+            bubbles: true,
+            cancelable: true,
+            composed: true,
+            inputType: 'insertText',
+            data: value,
+          })
+        );
+      } catch {}
+
+      element.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Unidentified' }));
+      element.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Unidentified' }));
+    } catch (err) {
+      try {
+        element.value = value;
+      } catch {}
     }
   }
 
@@ -43,12 +69,22 @@
   function detectLoginFields() {
     // A. Find password inputs
     const passwordInputs = Array.from(document.querySelectorAll('input[type="password"]')).filter((el) => {
-      if (el.type !== 'password') return false;
       const style = window.getComputedStyle(el);
       return style.display !== 'none' && style.visibility !== 'hidden' && el.type !== 'hidden';
     });
 
-    const passwordInput = passwordInputs[0] || document.querySelector('input[type="password"]');
+    let passwordInput = passwordInputs[0] || null;
+    if (!passwordInput) {
+      const passCandidates = Array.from(
+        document.querySelectorAll(
+          'input[autocomplete="current-password"], input[autocomplete="new-password"], input[name*="pass" i], input[id*="pass" i]'
+        )
+      ).filter((el) => {
+        const style = window.getComputedStyle(el);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      });
+      passwordInput = passCandidates[0] || document.querySelector('input[type="password"]');
+    }
 
     // B. Find candidate username/email input
     let usernameInput = null;
@@ -57,25 +93,27 @@
       'input[autocomplete="username"]',
       'input[autocomplete="email"]',
       'input[type="email"]',
+      'input[name*="identifier" i]',
+      'input[id*="identifier" i]',
       'input[name*="user" i]',
       'input[name*="uname" i]',
       'input[name*="login" i]',
       'input[name*="email" i]',
-      'input[name*="reg" i]',
-      'input[name*="roll" i]',
       'input[name*="account" i]',
       'input[id*="user" i]',
       'input[id*="uname" i]',
       'input[id*="login" i]',
       'input[id*="email" i]',
-      'input[id*="reg" i]',
-      'input[id*="roll" i]',
       'input[id*="account" i]',
       'input[placeholder*="user" i]',
       'input[placeholder*="uname" i]',
       'input[placeholder*="login" i]',
       'input[placeholder*="email" i]',
-      'input[placeholder*="reg" i]',
+      'input[placeholder*="identifier" i]',
+      'input[aria-label*="email" i]',
+      'input[aria-label*="user" i]',
+      'input[aria-label*="identifier" i]',
+      'input[type="tel"]',
     ];
 
     for (const sel of userSelectors) {
@@ -84,7 +122,7 @@
         const style = window.getComputedStyle(el);
         return (
           el !== passwordInput &&
-          (type === 'text' || type === 'email' || type === '') &&
+          (type === 'text' || type === 'email' || type === 'tel' || type === '') &&
           style.display !== 'none' &&
           style.visibility !== 'hidden'
         );
@@ -95,10 +133,12 @@
       }
     }
 
-    // Fallback: the visible input directly preceding the password input
+    // Fallback 1: the visible input directly preceding the password input
     if (!usernameInput && passwordInput) {
       const allInputs = Array.from(
-        document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])')
+        document.querySelectorAll(
+          'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])'
+        )
       ).filter((el) => {
         const style = window.getComputedStyle(el);
         return style.display !== 'none' && style.visibility !== 'hidden';
@@ -109,11 +149,26 @@
         for (let i = pIndex - 1; i >= 0; i--) {
           const candidate = allInputs[i];
           const cType = (candidate.type || '').toLowerCase();
-          if (cType === 'text' || cType === 'email' || cType === '') {
+          if (cType === 'text' || cType === 'email' || cType === 'tel' || cType === '') {
             usernameInput = candidate;
             break;
           }
         }
+      }
+    }
+
+    // Fallback 2: Single-field login forms (e.g. Google Step 1 email input)
+    if (!usernameInput && !passwordInput) {
+      const visibleTexts = Array.from(
+        document.querySelectorAll(
+          'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])'
+        )
+      ).filter((el) => {
+        const style = window.getComputedStyle(el);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      });
+      if (visibleTexts.length === 1) {
+        usernameInput = visibleTexts[0];
       }
     }
 
@@ -122,6 +177,7 @@
 
   // 3. Fill fields with credentials
   function autofillFields(credentials) {
+    if (!credentials) return false;
     const fields = detectLoginFields();
     let filled = false;
 
@@ -137,31 +193,76 @@
     if (filled) {
       showToast('Credentials autofilled by PassManage.', 'success');
       return true;
-    } else {
-      // If neither was identified, attempt filling the active focused input
-      if (document.activeElement && document.activeElement.tagName === 'INPUT') {
-        const active = document.activeElement;
-        if (active.type === 'password' && credentials.password) {
-          setNativeValue(active, credentials.password);
-          showToast('Password autofilled into active input.', 'success');
-          return true;
-        } else if (credentials.username) {
-          setNativeValue(active, credentials.username);
-          showToast('Username autofilled into active input.', 'success');
-          return true;
-        }
-      }
-      showToast('Could not find username or password inputs on this page.', 'warning');
-      return false;
     }
+
+    // Fallback: active element or any visible input
+    const visibleInputs = Array.from(document.querySelectorAll('input:not([type="hidden"])')).filter((el) => {
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    });
+
+    for (const inp of visibleInputs) {
+      const isPass = inp.type === 'password' || /pass/i.test(inp.name || inp.id);
+      if (isPass && credentials.password) {
+        setNativeValue(inp, credentials.password);
+        filled = true;
+      } else if (!isPass && credentials.username && (inp.type === 'text' || inp.type === 'email' || inp.type === '')) {
+        setNativeValue(inp, credentials.username);
+        filled = true;
+      }
+    }
+
+    if (filled) {
+      showToast('Credentials autofilled by PassManage.', 'success');
+      return true;
+    }
+
+    return false;
+  }
+
+  // 3b. Autofill with retry polling loop (handles asynchronous DOM rendering)
+  function autofillWithRetry(credentials, maxAttempts = 15) {
+    let attempts = 0;
+    const attemptFill = () => {
+      attempts++;
+      const ok = autofillFields(credentials);
+      if (ok) {
+        try {
+          chrome.storage.local.remove(['pendingAutofill']);
+        } catch {}
+      } else if (attempts < maxAttempts) {
+        setTimeout(attemptFill, 150);
+      }
+    };
+    attemptFill();
   }
 
   // 4. Message listener for direct injection from background or popup
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'INJECT_CREDENTIALS' && message.credentials) {
-      const ok = autofillFields(message.credentials);
-      sendResponse({ success: ok });
+      autofillWithRetry(message.credentials);
+      sendResponse({ success: true });
     }
+  });
+
+  // 4b. Check storage for pending autofill upon tab regain focus / visibility
+  function checkPendingAutofill() {
+    try {
+      chrome.storage.local.get(['pendingAutofill'], (data) => {
+        if (data && data.pendingAutofill) {
+          const { credentials, timestamp } = data.pendingAutofill;
+          // Valid within 45 seconds of biometric release
+          if (Date.now() - timestamp < 45000 && credentials) {
+            autofillWithRetry(credentials);
+          }
+        }
+      });
+    } catch {}
+  }
+
+  window.addEventListener('focus', checkPendingAutofill);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkPendingAutofill();
   });
 
   // 5. Query matching credentials on page load
@@ -417,6 +518,7 @@
 
   // Initialize on load and on DOM updates
   initPageCredentials();
+  checkPendingAutofill();
 
   let scanTimeout = null;
   const observer = new MutationObserver(() => {

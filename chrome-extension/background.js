@@ -104,11 +104,34 @@ async function handleAuthorizeAndRelease(credentialId, clientCategoryHint, targe
   const injectIntoTab = async (credentials) => {
     if (!targetTabId) return;
     try {
-      await chrome.tabs.update(targetTabId, { active: true });
-      await chrome.tabs.sendMessage(targetTabId, {
-        type: 'INJECT_CREDENTIALS',
-        credentials,
+      // 1. Store in chrome.storage.local so content.js can pull upon focus/visibility
+      await chrome.storage.local.set({
+        pendingAutofill: {
+          tabId: targetTabId,
+          credentials,
+          timestamp: Date.now(),
+        },
       });
+
+      // 2. Bring target tab to the foreground
+      await chrome.tabs.update(targetTabId, { active: true });
+
+      // 3. Retry sending message to give content script time to wake up and process
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await new Promise((r) => setTimeout(r, attempt === 0 ? 250 : 350));
+        try {
+          const resp = await chrome.tabs.sendMessage(targetTabId, {
+            type: 'INJECT_CREDENTIALS',
+            credentials,
+          });
+          if (resp && resp.success) {
+            await chrome.storage.local.remove(['pendingAutofill']);
+            break;
+          }
+        } catch (msgErr) {
+          // Tab transitioning or waking up, retry next tick
+        }
+      }
     } catch (e) {
       console.warn('[PassManage] Tab injection warning:', e);
     }
