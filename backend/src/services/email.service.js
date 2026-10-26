@@ -17,6 +17,9 @@ class EmailServiceClass {
           user: config.smtpUser,
           pass: config.smtpPass,
         },
+        connectionTimeout: 3000,
+        greetingTimeout: 3000,
+        socketTimeout: 5000,
       });
     } catch (err) {
       console.error('[EmailService] Failed to initialize nodemailer transporter:', err);
@@ -112,11 +115,14 @@ class EmailServiceClass {
   /**
    * Send Intruder Detection Alert with Attached Cropped Face Photograph
    */
-  async sendIntruderAlert({ to, websiteName, targetHostname, ipAddress, userAgent, timestamp, intruderImageBase64 }) {
+  async sendIntruderAlert({ to, websiteName, targetHostname, ipAddress, userAgent, timestamp, intruderImageBase64, alertType = 'INTRUDER_MISMATCH' }) {
     if (!this.transporter) this.initTransporter();
 
+    const isSpoof = alertType === 'SPOOF_PHOTO_ATTACK';
     const timeStr = timestamp ? new Date(timestamp).toLocaleString('en-US', { timeZoneName: 'short' }) : new Date().toLocaleString();
-    const subject = `🚨 Security Alert: Unauthorized Access Attempt Detected on PassManage`;
+    const subject = isSpoof
+      ? `🚨 Security Alert: Biometric Photo Spoof Attack Detected on PassManage`
+      : `🚨 Security Alert: Unauthorized Access Attempt Detected on PassManage`;
 
     // Process base64 image into clean buffer
     let imageBuffer = null;
@@ -144,12 +150,21 @@ class EmailServiceClass {
       });
     }
 
+    const bannerBadge = isSpoof ? 'BIOMETRIC SPOOF ATTACK PREVENTED' : 'SECURITY BREACH ATTEMPT PREVENTED';
+    const bannerTitle = isSpoof ? 'Photo / Digital Screen Spoof Rejected' : 'Unauthorized Biometric Access Rejected';
+    const bodyParagraph = isSpoof
+      ? `PassManage detected and blocked an automated biometric presentation attack (attempting to use a static photograph, printed picture, or digital screen display) to access your vault credentials for <strong>${websiteName || 'Unknown Site'}</strong> (<code style="color: #38bdf8; background: #020617; padding: 2px 6px; border-radius: 4px;">${targetHostname || 'unknown'}</code>).`
+      : `PassManage detected and blocked an unauthorized biometric facial scan attempting to unlock your stored vault password for <strong>${websiteName || 'Unknown Site'}</strong> (<code style="color: #38bdf8; background: #020617; padding: 2px 6px; border-radius: 4px;">${targetHostname || 'unknown'}</code>).`;
+    const photoSubtext = isSpoof
+      ? 'Static picture or digital device display captured silently during multi-scale liveness evaluation.'
+      : 'Face captured silently during failed biometric cosine similarity match.';
+
     const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Security Alert: Intruder Detected</title>
+  <title>Security Alert: Biometric Incident</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #090d16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e2e8f0;">
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #090d16; padding: 36px 16px;">
@@ -161,9 +176,9 @@ class EmailServiceClass {
             <td style="background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%); padding: 24px 32px; text-align: center; border-bottom: 1px solid #b91c1c;">
               <div style="font-size: 32px; margin-bottom: 8px;">🚨</div>
               <div style="display: inline-block; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 20px; padding: 4px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #fecaca; margin-bottom: 8px;">
-                SECURITY BREACH ATTEMPT PREVENTED
+                ${bannerBadge}
               </div>
-              <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #ffffff;">Unauthorized Biometric Access Rejected</h1>
+              <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #ffffff;">${bannerTitle}</h1>
             </td>
           </tr>
 
@@ -174,20 +189,20 @@ class EmailServiceClass {
                 Hello,
               </p>
               <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #cbd5e1;">
-                PassManage detected and blocked an unauthorized biometric facial scan attempting to unlock your stored vault password for <strong>${websiteName || 'Unknown Site'}</strong> (<code style="color: #38bdf8; background: #020617; padding: 2px 6px; border-radius: 4px;">${targetHostname || 'unknown'}</code>).
+                ${bodyParagraph}
               </p>
 
               <!-- Intruder Photograph Section -->
               ${hasImage ? `
               <div style="background-color: #020617; border: 1px solid #334155; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
                 <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #ef4444; margin-bottom: 12px;">
-                  📸 Captured Photograph of the Individual
+                  📸 Captured Photograph of the Individual / Device
                 </div>
                 <div style="display: inline-block; border-radius: 12px; overflow: hidden; border: 2px solid #ef4444; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3); max-width: 340px;">
-                  <img src="cid:intruder_snapshot@passmanage" alt="Captured Face of Intruder" style="display: block; width: 100%; height: auto; max-width: 340px;" />
+                  <img src="cid:intruder_snapshot@passmanage" alt="Captured Intruder" style="display: block; width: 100%; height: auto; max-width: 340px;" />
                 </div>
                 <div style="font-size: 11px; color: #94a3b8; margin-top: 10px;">
-                  Face captured silently during failed biometric cosine similarity match.
+                  ${photoSubtext}
                 </div>
               </div>
               ` : `

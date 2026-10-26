@@ -8,9 +8,9 @@ let baseUrl;
 
 test.before(async () => {
   await new Promise((resolve) => {
-    server = app.listen(0, () => {
+    server = app.listen(0, '127.0.0.1', () => {
       const port = server.address().port;
-      baseUrl = `http://localhost:${port}`;
+      baseUrl = `http://127.0.0.1:${port}`;
       resolve();
     });
   });

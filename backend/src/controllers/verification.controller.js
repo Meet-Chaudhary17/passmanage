@@ -79,12 +79,22 @@ export class VerificationController {
       const verifyResult = await FaceService.verifyFace(imageBase64, enrolledEmbedding);
 
       if (!verifyResult.verified) {
+        const isSpoof = verifyResult.is_real === false || verifyResult.spoof_detected === true;
+        const failureReason = isSpoof ? 'BIOMETRIC_SPOOF_ATTACK_DETECTED' : 'INTRUDER_FACE_MISMATCH';
+
         // Log verification failure
         await AuditService.logEvent({
           userId: req.user.id,
           eventType: 'FACE_VERIFY_FAILURE',
           req,
-          details: { sessionId, distance: verifyResult.distance, threshold: verifyResult.threshold },
+          details: {
+            sessionId,
+            distance: verifyResult.distance,
+            threshold: verifyResult.threshold,
+            isReal: verifyResult.is_real,
+            livenessScore: verifyResult.liveness_score,
+            failureReason,
+          },
         });
 
         // Log suspicious access denied
@@ -93,14 +103,15 @@ export class VerificationController {
           eventType: 'SUSPICIOUS_ACCESS_DENIED',
           req,
           details: {
-            reason: 'INTRUDER_FACE_MISMATCH',
+            reason: failureReason,
             sessionId,
             targetHostname: session.target_hostname,
             distance: verifyResult.distance,
+            livenessScore: verifyResult.liveness_score,
           },
         });
 
-        // Silently notify the registered account owner with intruder photograph
+        // Silently notify the registered account owner with intruder photograph or spoof snapshot
         try {
           const userRes = await db.query('SELECT email FROM users WHERE id = $1', [req.user.id]);
           const userEmail = userRes.rows[0]?.email;
@@ -113,6 +124,7 @@ export class VerificationController {
               userAgent: req.headers['user-agent'] || 'Browser Client',
               timestamp: new Date(),
               intruderImageBase64: verifyResult.intruder_face_crop || imageBase64,
+              alertType: isSpoof ? 'SPOOF_PHOTO_ATTACK' : 'INTRUDER_MISMATCH',
             }).catch((emailErr) => {
               console.error('[SECURITY ALERT] Failed to send intruder email:', emailErr);
             });
@@ -121,8 +133,13 @@ export class VerificationController {
           console.error('[SECURITY ALERT] Error preparing intruder alert dispatch:', alertErr);
         }
 
+        const errorMessage = isSpoof
+          ? 'Biometric liveness verification failed. Live human presence is required (photo or digital screen presentation detected).'
+          : 'Face verification failed. Please try again.';
+
         return res.status(403).json({
-          error: 'Face verification failed. Please try again.',
+          error: errorMessage,
+          isReal: verifyResult.is_real,
           distance: verifyResult.distance,
         });
       }
